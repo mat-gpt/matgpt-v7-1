@@ -1,4 +1,4 @@
-# Mat-GPT v6.7 (Upgraded for OpenAI SDK >=1.0.0)
+# Mat-GPT v6.8 — AI Assistant (Upgraded Layout + UX)
 
 import streamlit as st
 import sqlite3
@@ -85,14 +85,14 @@ def apply_theme(theme):
 # Login Section
 # ===============
 if not st.session_state.username:
-    st.title("\U0001F510 Login")
+    st.title("🔐 Login to Mat-GPT")
     uname = st.text_input("Username")
     pword = st.text_input("Password", type="password")
-    theme_choice = st.selectbox("Theme", list([
+    theme_choice = st.selectbox("Theme", [
         "Slam Diego (Padres Mode)", "Bolt Mode (Chargers)",
         "Arizona Cardinals", "Glasgow Rangers",
         "San Diego FC", "Yankees", "USA"
-    ]))
+    ])
     if st.button("Login"):
         user = cursor.execute("SELECT * FROM users WHERE username = ? AND password = ?", (uname, pword)).fetchone()
         if user:
@@ -106,49 +106,40 @@ if not st.session_state.username:
             st.error("Login failed")
     st.stop()
 
-# Apply theme after login
+# Apply selected theme
 apply_theme(st.session_state.theme)
 
 # ===============
-# Sidebar
+# Sidebar — Theme and Tools
 # ===============
-st.sidebar.title("🌐 Theme")
-
-# Define theme list explicitly
 themes = [
     "Slam Diego (Padres Mode)", "Bolt Mode (Chargers)",
     "Arizona Cardinals", "Glasgow Rangers",
     "San Diego FC", "Yankees", "USA"
 ]
-
-# Fix: make sure current theme is valid
 if st.session_state.theme not in themes:
-    st.session_state.theme = themes[0]  # fallback
+    st.session_state.theme = themes[0]
 
-# Now use the safe list
-st.sidebar.selectbox(
-    "", themes,
-    index=themes.index(st.session_state.theme),
-    key="theme",
-    on_change=lambda: st.rerun()
-)
+st.sidebar.title("🌐 Theme")
+st.sidebar.selectbox("", themes, index=themes.index(st.session_state.theme), key="theme", on_change=lambda: st.rerun())
 
-# ===============
-# Admin Tools
-# ===============
+if st.sidebar.button("🚪 Logout"):
+    for k in list(st.session_state.keys()):
+        del st.session_state[k]
+    st.rerun()
+
 if st.session_state.is_admin:
-    with st.sidebar.expander("\u2699 Admin Tools"):
+    with st.sidebar.expander("⚙ Admin Tools"):
         st.markdown("### Create New User")
         new_username = st.text_input("New Username")
         new_password = st.text_input("New Password", type="password")
         new_apikey = st.text_input("API Key")
         new_model = st.selectbox("Default Model", ["gpt-4", "gpt-4o", "gpt-3.5-turbo"])
-        new_theme = st.selectbox("Default Theme", list(st.session_state.get("theme", [])))
+        new_theme = st.selectbox("Default Theme", themes)
         isadmin = st.checkbox("Admin Privileges")
         if st.button("Create User"):
             try:
-                cursor.execute("INSERT INTO users VALUES (?, ?, ?, ?, ?, ?)",
-                               (new_username, new_password, new_apikey, new_model, new_theme, int(isadmin)))
+                cursor.execute("INSERT INTO users VALUES (?, ?, ?, ?, ?, ?)", (new_username, new_password, new_apikey, new_model, new_theme, int(isadmin)))
                 conn.commit()
                 st.success(f"✅ User '{new_username}' created.")
             except sqlite3.IntegrityError:
@@ -162,27 +153,28 @@ if st.session_state.is_admin:
             conn.commit()
             st.warning(f"❌ Deleted user: {user_to_delete}")
 
-# ===============
-# Advanced Tools
-# ===============
-with st.sidebar.expander("\U0001F6E0 Advanced Tools"):
-    st.markdown("### \U0001F4C2 CSV Parser (upload)")
+with st.sidebar.expander("🛠 Advanced Tools"):
+    st.markdown("### 📂 CSV Parser (upload)")
     st.file_uploader("Upload CSV for Parsing", type="csv")
     st.markdown("### ⚡ Certus Selector")
     option = st.selectbox("Data Need?", ["Short bursts", "Long sustained", "Latency-sensitive"])
     if option == "Short bursts":
         st.info("Recommended device: SkyLink Certus 100")
-    st.markdown("<p style='color:gray; font-size: 12px;'>📊 Graphs & summary modules coming next</p>", unsafe_allow_html=True)
 
 # ===============
-# Main App Body
+# Main UI Panel
 # ===============
-st.title(f"\U0001F916 Mat-GPT v6.7 — Welcome {st.session_state.username}")
-st.markdown(f"<p style='color:orange;'>Signed in as <b>{st.session_state.username}</b></p>", unsafe_allow_html=True)
-st.markdown(f"**Theme:** `{st.session_state.theme}` | **Model:** `{st.session_state.model}`")
+st.markdown("""
+    <div style='display: flex; justify-content: space-between;'>
+        <h1>🤖 Mat-GPT v6.8 — Welcome {}</h1>
+        <div style='font-size: 14px; margin-top: 30px;'>
+            <b>Theme:</b> {}<br><b>Model:</b> {}
+        </div>
+    </div>
+""".format(st.session_state.username, st.session_state.theme, st.session_state.model), unsafe_allow_html=True)
 
-user_prompt = st.text_input("\U0001F4AC Ask Mat-GPT", key="chat_input")
-if st.button("\U0001F4E8 Send"):
+user_prompt = st.text_input("💬 Ask Mat-GPT", key="chat_input")
+if st.button("📨 Send"):
     if not st.session_state.apikey:
         st.session_state.chat.append((user_prompt, "❌ Error: No API key provided. Please enter one in your user settings."))
     else:
@@ -198,11 +190,9 @@ if st.button("\U0001F4E8 Send"):
         except Exception as e:
             st.session_state.chat.append((user_prompt, f"❌ Error: {str(e)}"))
 
-# ===============
-# Conversation Thread
-# ===============
+# Conversation Above Input
 st.markdown("---")
-st.markdown("### \U0001F4AC Mat-GPT Conversation")
-for i, (q, a) in enumerate(reversed(st.session_state.chat)):
+st.markdown("### 💬 Mat-GPT Conversation")
+for q, a in reversed(st.session_state.chat):
     st.markdown(f"**You:** {q}")
     st.markdown(f"**Mat-GPT:** {a}", unsafe_allow_html=True)
