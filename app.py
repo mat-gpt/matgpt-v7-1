@@ -112,20 +112,26 @@ apply_theme(st.session_state.theme)
 # ===============
 # Sidebar
 # ===============
-st.sidebar.title("\U0001F310 Theme")
+st.sidebar.title("🌐 Theme")
+
+# Define theme list explicitly
 themes = [
     "Slam Diego (Padres Mode)", "Bolt Mode (Chargers)",
     "Arizona Cardinals", "Glasgow Rangers",
     "San Diego FC", "Yankees", "USA"
 ]
-st.sidebar.selectbox("", themes, index=themes.index(st.session_state.theme), key="theme", on_change=lambda: st.rerun())
 
+# Fix: make sure current theme is valid
+if st.session_state.theme not in themes:
+    st.session_state.theme = themes[0]  # fallback
 
-
-if st.sidebar.button("\U0001F6AA Logout"):
-    for k in list(st.session_state.keys()):
-        del st.session_state[k]
-    st.rerun()
+# Now use the safe list
+st.sidebar.selectbox(
+    "", themes,
+    index=themes.index(st.session_state.theme),
+    key="theme",
+    on_change=lambda: st.rerun()
+)
 
 # ===============
 # Admin Tools
