@@ -1,4 +1,4 @@
-# Mat-GPT v6.8 — AI Assistant (Upgraded Layout + UX)
+# Mat-GPT v6.9 — AI Assistant (Streaming Chat + Pinned Input)
 
 import streamlit as st
 import sqlite3
@@ -166,13 +166,22 @@ with st.sidebar.expander("🛠 Advanced Tools"):
 # ===============
 st.markdown("""
     <div style='display: flex; justify-content: space-between;'>
-        <h1>🤖 Mat-GPT v6.8 — Welcome {}</h1>
+        <h1>🤖 Mat-GPT v6.9 — Welcome {}</h1>
         <div style='font-size: 14px; margin-top: 30px;'>
             <b>Theme:</b> {}<br><b>Model:</b> {}
         </div>
     </div>
 """.format(st.session_state.username, st.session_state.theme, st.session_state.model), unsafe_allow_html=True)
 
+# Conversation Display Block
+st.markdown("---")
+st.markdown("### 💬 Mat-GPT Conversation")
+for q, a in reversed(st.session_state.chat):
+    st.markdown(f"**You:** {q}")
+    st.markdown(f"**Mat-GPT:** {a}", unsafe_allow_html=True)
+
+# Input Box Fixed to Bottom
+st.markdown("---")
 user_prompt = st.text_input("💬 Ask Mat-GPT", key="chat_input")
 if st.button("📨 Send"):
     if not st.session_state.apikey:
@@ -181,18 +190,16 @@ if st.button("📨 Send"):
         client = openai.OpenAI(api_key=st.session_state.apikey)
         try:
             with st.spinner("Thinking..."):
-                result = client.chat.completions.create(
+                reply = ""
+                response = client.chat.completions.create(
                     model=st.session_state.model,
-                    messages=[{"role": "user", "content": user_prompt}]
+                    messages=[{"role": "user", "content": user_prompt}],
+                    stream=True
                 )
-                reply = result.choices[0].message.content
+                for chunk in response:
+                    if hasattr(chunk.choices[0].delta, 'content'):
+                        reply += chunk.choices[0].delta.content
+                        st.markdown(f"**Mat-GPT (typing):** {reply}", unsafe_allow_html=True)
                 st.session_state.chat.append((user_prompt, reply))
         except Exception as e:
             st.session_state.chat.append((user_prompt, f"❌ Error: {str(e)}"))
-
-# Conversation Above Input
-st.markdown("---")
-st.markdown("### 💬 Mat-GPT Conversation")
-for q, a in reversed(st.session_state.chat):
-    st.markdown(f"**You:** {q}")
-    st.markdown(f"**Mat-GPT:** {a}", unsafe_allow_html=True)
