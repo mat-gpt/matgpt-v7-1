@@ -113,7 +113,14 @@ apply_theme(st.session_state.theme)
 # Sidebar
 # ===============
 st.sidebar.title("\U0001F310 Theme")
-st.sidebar.selectbox("", list(st.session_state.get("theme", [])), index=0, key="theme", on_change=lambda: st.rerun())
+themes = [
+    "Slam Diego (Padres Mode)", "Bolt Mode (Chargers)",
+    "Arizona Cardinals", "Glasgow Rangers",
+    "San Diego FC", "Yankees", "USA"
+]
+st.sidebar.selectbox("", themes, index=themes.index(st.session_state.theme), key="theme", on_change=lambda: st.rerun())
+
+
 
 if st.sidebar.button("\U0001F6AA Logout"):
     for k in list(st.session_state.keys()):
