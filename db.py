@@ -1,9 +1,12 @@
-# db.py - Mat-GPT v7.0 Database Interface
+# db.py – Mat-GPT v7.0 Database Interface
+
 import sqlite3
 import pandas as pd
+import os
 
 def init_db():
-    conn = sqlite3.connect("matgpt.db")
+    db_path = os.path.join(os.path.dirname(__file__), "matgpt.db")
+    conn = sqlite3.connect(db_path)
     return conn
 
 def get_memory_prompts(conn):
