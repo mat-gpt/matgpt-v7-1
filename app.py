@@ -1,61 +1,65 @@
-# Mat-GPT v7.0 - Final Release
-# Main Streamlit Application File
-
-import streamlit as st
-import pandas as pd
 import sqlite3
 import os
-import base64
-from db import init_db, get_memory_prompts, get_test_registry
 
-st.set_page_config(page_title="Mat-GPT v7.0", layout="wide")
+DB_PATH = "matgpt.db"
 
-# Load Assistant Prompts from DB
-conn = init_db()
-prompts = get_memory_prompts(conn)
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    
+    c.execute('''
+    CREATE TABLE IF NOT EXISTS assistant_prompts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        key TEXT UNIQUE,
+        content TEXT
+    )
+    ''')
 
-# Persistent Session State Init
-if "history" not in st.session_state:
-    st.session_state.history = []
+    c.execute('''
+    CREATE TABLE IF NOT EXISTS test_registry (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        test_name TEXT,
+        sender TEXT,
+        receiver TEXT,
+        profile TEXT,
+        date TEXT,
+        notes TEXT,
+        source_file TEXT
+    )
+    ''')
+    
+    conn.commit()
+    conn.close()
 
-if "test_registry" not in st.session_state:
-    st.session_state.test_registry = get_test_registry(conn)
+def insert_prompt(key, content):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('INSERT OR REPLACE INTO assistant_prompts (key, content) VALUES (?, ?)', (key, content))
+    conn.commit()
+    conn.close()
 
-# Sidebar
-with st.sidebar:
-    st.title("🛰️ Mat-GPT v7.0")
-    st.markdown("**Mode:** Satcom Test Intelligence")
-    st.markdown("**Theme:** Padres / Chargers")
-    st.markdown("**Build:** Feature Locked ✅")
-    st.markdown("---")
-    uploaded_files = st.file_uploader("Upload CSV, PCAP, or Log Files", accept_multiple_files=True)
+def fetch_prompts():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('SELECT key, content FROM assistant_prompts')
+    results = c.fetchall()
+    conn.close()
+    return {k: v for k, v in results}
 
-    if uploaded_files:
-        for file in uploaded_files:
-            st.success(f"Uploaded: {file.name}")
+def insert_test_record(test_name, sender, receiver, profile, date, notes, source_file):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('''
+    INSERT INTO test_registry (test_name, sender, receiver, profile, date, notes, source_file)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (test_name, sender, receiver, profile, date, notes, source_file))
+    conn.commit()
+    conn.close()
 
-# Main Chat Interface
-st.title("Mat-GPT")
-user_input = st.text_input("Ask Mat-GPT something about your test data:")
-
-if user_input:
-    st.session_state.history.append(("You", user_input))
-    response = f"[Simulated Response] You asked: {user_input}"
-    st.session_state.history.append(("Mat-GPT", response))
-
-# Display Chat
-for speaker, msg in st.session_state.history:
-    if speaker == "You":
-        st.markdown(f"**🧑 You:** {msg}")
-    else:
-        st.markdown(f"**🤖 Mat-GPT:** {msg}")
-
-# Test Registry Viewer
-st.markdown("---")
-st.subheader("📋 Test Registry")
-if st.session_state.test_registry is not None:
-    st.dataframe(st.session_state.test_registry)
-else:
-    st.warning("No tests loaded in registry.")
-
-conn.close()
+def fetch_all_tests():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('SELECT * FROM test_registry ORDER BY date DESC')
+    results = c.fetchall()
+    conn.close()
+    return results
