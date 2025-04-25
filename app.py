@@ -1,3 +1,4 @@
+print("App is running!")
 import sqlite3
 import os
 
