@@ -197,8 +197,8 @@ elif page == "SkyDome (Coming Soon)":
 elif page == "Predictive (Coming Soon)":
     st.title("📊 Predictive Modeling")
     st.info("Predictive modeling and test behavior forecasting will be part of Mat-GPT v7.4.")
-        st.divider()
-        st.subheader("SBD File Details")
+       st.divider()
+       st.subheader("SBD File Details")
 
         file_info = {
             "Filename": sbd_file.name,
