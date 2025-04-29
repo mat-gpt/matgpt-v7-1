@@ -197,50 +197,51 @@ elif page == "SkyDome (Coming Soon)":
 elif page == "Predictive (Coming Soon)":
     st.title("📊 Predictive Modeling")
     st.info("Predictive modeling and test behavior forecasting will be part of Mat-GPT v7.4.")
-       st.divider()
-       st.subheader("SBD File Details")
+    st.divider()
+    st.subheader("SBD File Details")
 
-        file_info = {
-            "Filename": sbd_file.name,
-            "Size (bytes)": len(sbd_file.getvalue()),
-            "Saved Path": sbd_path,
-            "Timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        }
-        st.json(file_info)
+    file_info = {
+        "Filename": sbd_file.name,
+        "Size (bytes)": len(sbd_file.getvalue()),
+        "Saved Path": sbd_path,
+        "Timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    st.json(file_info)
 
-        st.subheader("Raw Hex Dump")
-        raw_bytes = sbd_file.getvalue()
-        hex_dump = ' '.join(f'{b:02X}' for b in raw_bytes[:256])
-        st.code(hex_dump, language="bash")
+    st.subheader("Raw Hex Dump")
+    raw_bytes = sbd_file.getvalue()
+    hex_dump = ' '.join(f'{b:02X}' for b in raw_bytes[:256])
+    st.code(hex_dump, language="bash")
 
-        st.subheader("Payload Decoder (coming soon)")
-        st.info("Automatic protocol decoding will be available when schema is provided.")
+    st.subheader("Payload Decoder (coming soon)")
+    st.info("Automatic protocol decoding will be available when schema is provided.")
 
-        # Store basic info in DB (future registry)
-        conn = get_connection()
-        c = conn.cursor()
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS sbd_files (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                filename TEXT,
-                path TEXT,
-                size INTEGER,
-                timestamp TEXT
-            )
-        ''')
-        c.execute('''
-            INSERT INTO sbd_files (filename, path, size, timestamp)
-            VALUES (?, ?, ?, ?)
-        ''', (
-            sbd_file.name,
-            sbd_path,
-            len(raw_bytes),
-            datetime.datetime.now().isoformat()
-        ))
-        conn.commit()
-        conn.close()
+    # Store basic info in DB (future registry)
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS sbd_files (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            filename TEXT,
+            path TEXT,
+            size INTEGER,
+            timestamp TEXT
+        )
+    ''')
+    c.execute('''
+        INSERT INTO sbd_files (filename, path, size, timestamp)
+        VALUES (?, ?, ?, ?)
+    ''', (
+        sbd_file.name,
+        sbd_path,
+        len(raw_bytes),
+        datetime.datetime.now().isoformat()
+    ))
+    conn.commit()
+    conn.close()
 
-        st.success("✅ File info saved to registry.")
+    st.success("✅ File info saved to registry.")
+
 # ==============================
 # SBD Analyzer Continued - Real Expansion
 # ==============================
