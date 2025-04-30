@@ -179,7 +179,24 @@ if page == "Home":
 elif page == "Chat":
     st.title("💬 Chat with Mat-GPT")
 
-    st.chat_message("assistant").markdown("Welcome to the Mat-GPT chat! I'm ready to help you analyze your data, decode logs, or rant about bad CSVs.")
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = [
+            ("assistant", "Welcome to the Mat-GPT chat! I'm ready to help you analyze your data, decode logs, or rant about bad CSVs.")
+        ]
+
+    for role, message in st.session_state.chat_history:
+        st.chat_message(role).markdown(message)
+
+    user_input = st.chat_input("Ask Mat-GPT something...")
+
+    if user_input:
+        st.chat_message("user").markdown(user_input)
+        st.session_state.chat_history.append(("user", user_input))
+
+        # STUBBED RESPONSE – works without OpenAI key
+        response = f"🤖 Mat-GPT says: '{user_input}' (replace this with real model output)"
+        st.chat_message("assistant").markdown(response)
+        st.session_state.chat_history.append(("assistant", response))
 
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
