@@ -319,8 +319,9 @@ if protocol_schema and sbd_file:
         st.warning("⚠️ No fields defined in uploaded schema.")
 
 # Section: If No Schema Uploaded
-elif sbd_file and not protocol_schema:
+if 'sbd_file' in locals() and sbd_file and not protocol_schema:
     st.info("Upload a protocol schema to decode payload.")
+
 
 # New Table for Decoded Data (future extension)
 def create_decoded_table():
