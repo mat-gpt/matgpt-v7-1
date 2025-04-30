@@ -137,14 +137,16 @@ page = st.sidebar.radio("Navigate", [
     "Home",
     "Upload",
     "Preview",
+    "Chat",  # ✅ Add this line
     "Test Registry",
     "SBD Analyzer",
     "Memory Editor",
     "Session Browser",
-    "Login / Users",               # ✅ Added login/user section
+    "Login / Users",
     "SkyDome (Coming Soon)",
     "Predictive (Coming Soon)"
 ])
+
 
 # HOME PAGE
 if page == "Home":
@@ -170,6 +172,29 @@ if page == "Home":
         with open(file_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
         st.success(f"✅ File {uploaded_file.name} uploaded successfully to {UPLOAD_DIR}/")
+
+# ==============================
+# CHAT MODULE (Restored)
+# ==============================
+elif page == "Chat":
+    st.title("💬 Chat with Mat-GPT")
+
+    st.chat_message("assistant").markdown("Welcome to the Mat-GPT chat! I'm ready to help you analyze your data, decode logs, or rant about bad CSVs.")
+
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+
+    user_input = st.chat_input("Ask Mat-GPT something...")
+    if user_input:
+        st.session_state.chat_history.append(("user", user_input))
+        # Replace this with actual OpenAI call
+        response = f"🤖 Mat-GPT (stub): You said — '{user_input}'"
+        st.session_state.chat_history.append(("assistant", response))
+
+    for role, message in st.session_state.chat_history:
+        st.chat_message(role).markdown(message)
+
+
 # PREVIEW PAGE
 elif page == "Preview":
     st.title("🧾 Preview Uploaded Files")
@@ -494,17 +519,19 @@ if protocol_schema:
 st.divider()
 st.subheader("Registered Protocol Schemas")
 
+# Reload protocol schema registry from DB (SBD Analyzer context)
 conn = get_connection()
 c = conn.cursor()
-c.execute('SELECT id, name FROM sbd_protocol_schemas')
+c.execute('SELECT id, name, timestamp FROM sbd_protocol_schemas ORDER BY timestamp DESC')
 schemas = c.fetchall()
 conn.close()
 
 if schemas:
     for schema in schemas:
-        st.write(f"📜 ID: {schema[0]} | Name: {schema[1]}")
+        st.markdown(f"📜 **{schema[1]}** (ID: {schema[0]}) — Saved: {schema[2]}")
 else:
-    st.info("No protocol schemas saved yet.")
+    st.info("⚠️ No protocol schemas saved yet.")
+
 
 # ==============================
 # End of SBD Analyzer Expansion (Real)
