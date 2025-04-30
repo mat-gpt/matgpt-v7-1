@@ -83,11 +83,19 @@ page = st.sidebar.radio("Navigate", [
 if page == "Home":
     st.title("Welcome to Mat-GPT v7.0")
     st.markdown("This is the official Mat-GPT v7.0 application — with memory, uploads, previews, test logging, and more.")
-    st.info("To begin, choose a module from the left sidebar.")
+    st.info("To begin, choose a module from the left sidebar. Or just click around and pretend you know what you're doing. 😄")
 
-# UPLOAD PAGE
-elif page == "Upload":
-    st.title("📤 Upload CSV or PCAP")
+    st.markdown("""
+    ### 🤖 What Can I Do?
+    - Upload CSV, PCAP, or SBD files
+    - Chat through your rows like a data therapist
+    - Decode SBD payloads (if schema is provided)
+    - Analyze satellite visibility and latency trends
+    - Track sessions and auto-tag everything (even your questionable file names)
+
+    > “I’m not saying I’m smart… but I’ve definitely seen dumber code.” – Mat-GPT
+    """)
+
     uploaded_file = st.file_uploader("Choose a CSV or PCAP file", type=["csv", "pcap"])
 
     if uploaded_file:
@@ -123,8 +131,16 @@ elif page == "Preview":
 
                     for idx in range(start_index, min(start_index + row_limit, len(filtered_df))):
                         row = filtered_df.iloc[idx]
-                        st.chat_message("user").markdown(f"{row.to_dict()}")
+                        row_dict = row.to_dict()
+                        formatted_row = "\n".join([f"**{k}**: {v}" for k, v in row_dict.items()])
+
+                        st.chat_message("user").markdown(f"Here’s the next row previewed:\n\n{formatted_row}")
+                        st.chat_message("assistant").markdown(
+                            f"🤖 *(Assistant)*: Interesting! Looks like row {idx} contains some juicy details... 🕵️\n"
+                            f"Let's keep going — data never sleeps!"
+                        )
                         time.sleep(0.01)
+
                 else:
                     st.warning("Select at least one column to preview.")
 
@@ -139,7 +155,6 @@ elif page == "Preview":
         st.warning("No files found in upload directory.")
 elif page == "Test Registry":
     st.title("🧪 Test Registry")
-
     conn = get_connection()
     c = conn.cursor()
 
