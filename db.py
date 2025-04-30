@@ -6,11 +6,20 @@ import os
 
 # Set consistent absolute path to matgpt.db regardless of Streamlit's working directory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
 DB_FILE = os.path.join(BASE_DIR, "matgpt.db")
+
+# Ensure upload directory exists
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR)
+
+def get_connection():
+    """Returns a live connection to the database with multi-thread safety."""
+    return sqlite3.connect(DB_FILE, check_same_thread=False)
 
 def init_db():
     """Initializes database and creates required tables if they don't exist."""
-    conn = sqlite3.connect(DB_FILE)
+    conn = get_connection()
     cursor = conn.cursor()
 
     # Table: assistant_prompts
@@ -45,21 +54,29 @@ def init_db():
         )
     ''')
 
-    conn.commit()
-    return conn
+    # Optional: Add more table initializations here as needed
 
-def get_memory_prompts(conn):
+    conn.commit()
+    conn.close()
+
+def get_memory_prompts():
     """Returns assistant prompts as a list of dicts."""
+    conn = get_connection()
     try:
         df = pd.read_sql_query("SELECT * FROM assistant_prompts", conn)
         return df.to_dict(orient='records')
     except Exception:
         return []
+    finally:
+        conn.close()
 
-def get_test_registry(conn):
+def get_test_registry():
     """Returns test registry records as a DataFrame."""
+    conn = get_connection()
     try:
         df = pd.read_sql_query("SELECT * FROM test_registry ORDER BY date_created DESC", conn)
         return df
     except Exception:
         return None
+    finally:
+        conn.close()
