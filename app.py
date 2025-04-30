@@ -19,8 +19,10 @@ def get_connection():
 
 def init_db():
     conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute('''
+    c = conn.cursor()
+
+    # Core tables
+    c.execute('''
         CREATE TABLE IF NOT EXISTS test_registry (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             sender TEXT,
@@ -29,17 +31,46 @@ def init_db():
             date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-    cursor.execute('''
+    c.execute('''
         CREATE TABLE IF NOT EXISTS assistant_prompts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT,
             content TEXT
         )
     ''')
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS file_tags (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            filename TEXT,
+            session_id TEXT,
+            test_name TEXT,
+            tag_type TEXT,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # Add other known tables if desired for redundancy:
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS sbd_files (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            filename TEXT,
+            path TEXT,
+            size INTEGER,
+            timestamp TEXT
+        )
+    ''')
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS sessions (
+            id TEXT PRIMARY KEY,
+            start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
     conn.commit()
     conn.close()
 
 init_db()
+
 
 # Load memory prompts
 def load_memory():
