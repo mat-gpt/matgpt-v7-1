@@ -18,8 +18,42 @@ def get_connection():
     return sqlite3.connect(DB_FILE, check_same_thread=False)
 
 def init_db():
-    if os.path.exists(DB_FILE):
-        return  # ✅ Use existing DB, don't recreate
+    conn = get_connection()
+    c = conn.cursor()
+
+    # ✅ Test Registry
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS test_registry (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sender TEXT,
+            receiver TEXT,
+            profile TEXT,
+            date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # ✅ Users Table for Login System
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE,
+            password TEXT,
+            email TEXT,
+            role TEXT
+        )
+    ''')
+
+    # ✅ Seed default admin user if not present
+    c.execute("SELECT * FROM users WHERE username = 'admin'")
+    if not c.fetchone():
+        c.execute('''
+            INSERT INTO users (username, password, email, role)
+            VALUES (?, ?, ?, ?)
+        ''', ('admin', 'admin', 'admin@example.com', 'admin'))
+
+    conn.commit()
+    conn.close()
+
 
     conn = get_connection()
     c = conn.cursor()
