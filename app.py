@@ -7,13 +7,7 @@ import json
 import time
 import datetime
 
-# Constants
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
-DB_FILE = os.path.join(BASE_DIR, "matgpt.db")
-if not os.path.exists(UPLOAD_DIR):
-    os.makedirs(UPLOAD_DIR)
-# Initialize database connection
+## Initialize database connection
 def get_connection():
     return sqlite3.connect(DB_FILE, check_same_thread=False)
 
@@ -43,6 +37,25 @@ def init_db():
         )
     ''')
 
+    # ✅ Assistant Prompts Table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS assistant_prompts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT,
+            content TEXT
+        )
+    ''')
+
+    # ✅ sbd_protocol_schemas table (🔥 this was missing!)
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS sbd_protocol_schemas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            schema_json TEXT,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
     # ✅ Seed default admin user if not present
     c.execute("SELECT * FROM users WHERE username = 'admin'")
     if not c.fetchone():
@@ -53,25 +66,6 @@ def init_db():
 
     conn.commit()
     conn.close()
-
-
-    conn = get_connection()
-    c = conn.cursor()
-
-    # (You can keep your full schema here if you want fallback, or leave it minimal)
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS test_registry (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            sender TEXT,
-            receiver TEXT,
-            profile TEXT,
-            date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-
-    conn.commit()
-    conn.close()
-init_db()
 
 def load_memory():
     conn = get_connection()

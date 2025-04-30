@@ -9,14 +9,6 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
 DB_FILE = os.path.join(BASE_DIR, "matgpt.db")
 
-# Ensure upload directory exists
-if not os.path.exists(UPLOAD_DIR):
-    os.makedirs(UPLOAD_DIR)
-
-def get_connection():
-    """Returns a live connection to the database with multi-thread safety."""
-    return sqlite3.connect(DB_FILE, check_same_thread=False)
-
 def init_db():
     """Initializes database and creates required tables if they don't exist."""
     conn = get_connection()
@@ -66,9 +58,19 @@ def init_db():
         )
     ''')
 
+    # ✅ Fix: Add missing sbd_protocol_schemas table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS sbd_protocol_schemas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            schema_json TEXT,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
     conn.commit()
     conn.close()
-def get_memory_prompts():
+
     """Returns assistant prompts as a list of dicts."""
     conn = get_connection()
     try:
