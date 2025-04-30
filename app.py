@@ -18,10 +18,13 @@ def get_connection():
     return sqlite3.connect(DB_FILE, check_same_thread=False)
 
 def init_db():
+    if os.path.exists(DB_FILE):
+        return  # ✅ Use existing DB, don't recreate
+
     conn = get_connection()
     c = conn.cursor()
 
-    # Core tables
+    # (You can keep your full schema here if you want fallback, or leave it minimal)
     c.execute('''
         CREATE TABLE IF NOT EXISTS test_registry (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -31,47 +34,9 @@ def init_db():
             date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS assistant_prompts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT,
-            content TEXT
-        )
-    ''')
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS file_tags (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            filename TEXT,
-            session_id TEXT,
-            test_name TEXT,
-            tag_type TEXT,
-            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-
-     # Add other known tables if desired for redundancy:
-    # c.execute(''' ... ''')  # Placeholder for future schema
-
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS sbd_files (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            filename TEXT,
-            path TEXT,
-            size INTEGER,
-            timestamp TEXT
-        )
-    ''')
-
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS sessions (
-            id TEXT PRIMARY KEY,
-            start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
 
     conn.commit()
     conn.close()
-
 init_db()
 
 def load_memory():
