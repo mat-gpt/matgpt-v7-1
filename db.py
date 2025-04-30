@@ -31,16 +31,19 @@ def init_db():
         )
     ''')
 
-    # Table: test_registry
+    # Table: test_registry (add column patch for date_created)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS test_registry (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             sender TEXT,
             receiver TEXT,
-            profile TEXT,
-            date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            profile TEXT
         )
     ''')
+    try:
+        cursor.execute('ALTER TABLE test_registry ADD COLUMN date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
 
     # Table: file_tags
     cursor.execute('''

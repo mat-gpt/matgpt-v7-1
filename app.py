@@ -13,7 +13,6 @@ UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
 DB_FILE = os.path.join(BASE_DIR, "matgpt.db")
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
-
 # Initialize database connection
 def get_connection():
     return sqlite3.connect(DB_FILE, check_same_thread=False)
@@ -51,7 +50,10 @@ def init_db():
     ''')
 
     # Add other known tables if desired for redundancy:
-    c.execute('''
+    # c.execute(''' ... ''')  # Placeholder for future schema
+
+    conn.commit()
+    conn.close()
         CREATE TABLE IF NOT EXISTS sbd_files (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             filename TEXT,
