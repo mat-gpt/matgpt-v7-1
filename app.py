@@ -94,6 +94,10 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+# Ensure database is initialized only once per session, after Streamlit fully loads
+if "db_initialized" not in st.session_state:
+    init_db()
+    st.session_state["db_initialized"] = True
 
 # Sidebar Navigation
 st.sidebar.title("🧠 Mat-GPT Modules")
