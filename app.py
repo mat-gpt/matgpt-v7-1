@@ -1,13 +1,29 @@
+# ============================
+# Mat-GPT v7.0 – Initialization & Constants
+# ============================
+
+import os  # ⬅ must come before defining BASE_DIR
 import streamlit as st
 import pandas as pd
 import sqlite3
-import os
 import base64
 import json
 import time
 import datetime
 
-## Initialize database connection
+# ✅ Path Constants (must be defined at the very top before usage)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+DB_FILE = os.path.join(BASE_DIR, "matgpt.db")
+
+# ✅ Ensure upload directory exists
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR)
+
+# ============================
+# Database Connection + Init
+# ============================
+
 def get_connection():
     return sqlite3.connect(DB_FILE, check_same_thread=False)
 
@@ -48,6 +64,7 @@ def init_db():
 
     # ✅ sbd_protocol_schemas table (🔥 this was missing!)
     c.execute('''
+
         CREATE TABLE IF NOT EXISTS sbd_protocol_schemas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT,
