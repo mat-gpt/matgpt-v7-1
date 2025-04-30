@@ -8,8 +8,9 @@ import time
 import datetime
 
 # Constants
-UPLOAD_DIR = "uploads"
-DB_FILE = "matgpt.db"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+DB_FILE = os.path.join(BASE_DIR, "matgpt.db")
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
