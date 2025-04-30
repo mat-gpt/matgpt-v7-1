@@ -13,7 +13,7 @@ def init_db():
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
 
-    # Create assistant memory prompts table
+    # Table: assistant_prompts
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS assistant_prompts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,7 +22,7 @@ def init_db():
         )
     ''')
 
-    # Create test registry table
+    # Table: test_registry
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS test_registry (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,6 +30,18 @@ def init_db():
             receiver TEXT,
             profile TEXT,
             date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # Table: file_tags
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS file_tags (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            filename TEXT,
+            session_id TEXT,
+            test_name TEXT,
+            tag_type TEXT,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
 
