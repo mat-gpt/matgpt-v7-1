@@ -231,47 +231,52 @@ elif page == "Predictive (Coming Soon)":
     st.divider()
     st.subheader("SBD File Details")
 
-    file_info = {
-        "Filename": sbd_file.name,
-        "Size (bytes)": len(sbd_file.getvalue()),
-        "Saved Path": sbd_path,
-        "Timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }
-    st.json(file_info)
+    if 'sbd_file' in locals() and sbd_file:
+        raw_bytes = sbd_file.getvalue()
+        sbd_path = os.path.join(UPLOAD_DIR, sbd_file.name)
 
-    st.subheader("Raw Hex Dump")
-    raw_bytes = sbd_file.getvalue()
-    hex_dump = ' '.join(f'{b:02X}' for b in raw_bytes[:256])
-    st.code(hex_dump, language="bash")
+        file_info = {
+            "Filename": sbd_file.name,
+            "Size (bytes)": len(raw_bytes),
+            "Saved Path": sbd_path,
+            "Timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+        st.json(file_info)
 
-    st.subheader("Payload Decoder (coming soon)")
-    st.info("Automatic protocol decoding will be available when schema is provided.")
+        st.subheader("Raw Hex Dump")
+        hex_dump = ' '.join(f'{b:02X}' for b in raw_bytes[:256])
+        st.code(hex_dump, language="bash")
 
-    # Store basic info in DB (future registry)
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS sbd_files (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            filename TEXT,
-            path TEXT,
-            size INTEGER,
-            timestamp TEXT
-        )
-    ''')
-    c.execute('''
-        INSERT INTO sbd_files (filename, path, size, timestamp)
-        VALUES (?, ?, ?, ?)
-    ''', (
-        sbd_file.name,
-        sbd_path,
-        len(raw_bytes),
-        datetime.datetime.now().isoformat()
-    ))
-    conn.commit()
-    conn.close()
+        st.subheader("Payload Decoder (coming soon)")
+        st.info("Automatic protocol decoding will be available when schema is provided.")
 
-    st.success("✅ File info saved to registry.")
+        # Store basic info in DB (future registry)
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS sbd_files (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                filename TEXT,
+                path TEXT,
+                size INTEGER,
+                timestamp TEXT
+            )
+        ''')
+        c.execute('''
+            INSERT INTO sbd_files (filename, path, size, timestamp)
+            VALUES (?, ?, ?, ?)
+        ''', (
+            sbd_file.name,
+            sbd_path,
+            len(raw_bytes),
+            datetime.datetime.now().isoformat()
+        ))
+        conn.commit()
+        conn.close()
+
+        st.success("✅ File info saved to registry.")
+    else:
+        st.warning("⚠️ No SBD file uploaded yet.")
 
 # ==============================
 # SBD Analyzer Continued - Real Expansion
