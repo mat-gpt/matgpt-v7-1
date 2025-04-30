@@ -49,11 +49,10 @@ def init_db():
         )
     ''')
 
-    # Add other known tables if desired for redundancy:
+     # Add other known tables if desired for redundancy:
     # c.execute(''' ... ''')  # Placeholder for future schema
 
-    conn.commit()
-    conn.close()
+    c.execute('''
         CREATE TABLE IF NOT EXISTS sbd_files (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             filename TEXT,
@@ -62,6 +61,7 @@ def init_db():
             timestamp TEXT
         )
     ''')
+
     c.execute('''
         CREATE TABLE IF NOT EXISTS sessions (
             id TEXT PRIMARY KEY,
@@ -74,8 +74,6 @@ def init_db():
 
 init_db()
 
-
-# Load memory prompts
 def load_memory():
     conn = get_connection()
     c = conn.cursor()
