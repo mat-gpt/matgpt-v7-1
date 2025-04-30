@@ -52,6 +52,36 @@ def load_memory():
 
 memory_prompts = load_memory()
 
+# --- LOGIN MANAGER ---
+
+def login_user(username, password):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('SELECT * FROM users WHERE username = ? AND password = ?', (username, password))
+    user = c.fetchone()
+    conn.close()
+    return user
+
+def show_login_page():
+    st.title("🔐 Mat-GPT Login")
+
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+    if st.button("Login"):
+        user = login_user(username, password)
+        if user:
+            st.session_state["user"] = {
+                "id": user[0],
+                "username": user[1],
+                "role": user[4]
+            }
+            st.success(f"✅ Welcome back, {user[1]}!")
+            st.experimental_rerun()
+        else:
+            st.error("❌ Invalid credentials")
+
+
+
 # App Configuration
 st.set_page_config(
     page_title="Mat-GPT v7.0",
@@ -63,6 +93,9 @@ st.set_page_config(
 if "db_initialized" not in st.session_state:
     init_db()
     st.session_state["db_initialized"] = True
+if "user" not in st.session_state:
+    show_login_page()
+    st.stop()
 
 # Sidebar Navigation
 st.sidebar.title("🧠 Mat-GPT Modules")
@@ -73,10 +106,10 @@ page = st.sidebar.radio("Navigate", [
     "Test Registry",
     "SBD Analyzer",
     "Memory Editor",
-    "Session Browser",  # 👈 add here
+    "Session Browser",
+    "Login / Users",               # ✅ Added login/user section
     "SkyDome (Coming Soon)",
     "Predictive (Coming Soon)"
-
 ])
 
 # HOME PAGE

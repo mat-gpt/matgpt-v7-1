@@ -37,13 +37,10 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             sender TEXT,
             receiver TEXT,
-            profile TEXT
+            profile TEXT,
+            date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-    try:
-        cursor.execute('ALTER TABLE test_registry ADD COLUMN date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP')
-    except sqlite3.OperationalError:
-        pass  # Column already exists
 
     # Table: file_tags
     cursor.execute('''
@@ -57,11 +54,20 @@ def init_db():
         )
     ''')
 
-    # Optional: Add more table initializations here as needed
+    # ✅ Table: users (for login, API keys, roles)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE,
+            password TEXT,
+            api_key TEXT,
+            role TEXT DEFAULT 'user',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
 
     conn.commit()
     conn.close()
-
 def get_memory_prompts():
     """Returns assistant prompts as a list of dicts."""
     conn = get_connection()
