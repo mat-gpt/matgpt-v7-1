@@ -209,19 +209,6 @@ elif page == "Chat":
         st.chat_message("assistant").markdown(response)
         st.session_state.chat_history.append(("assistant", response))
 
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []
-
-    user_input = st.chat_input("Ask Mat-GPT something...")
-    if user_input:
-        st.session_state.chat_history.append(("user", user_input))
-        # Replace this with actual OpenAI call
-        response = f"🤖 Mat-GPT (stub): You said — '{user_input}'"
-        st.session_state.chat_history.append(("assistant", response))
-
-    for role, message in st.session_state.chat_history:
-        st.chat_message(role).markdown(message)
-
 
 # PREVIEW PAGE
 elif page == "Preview":
