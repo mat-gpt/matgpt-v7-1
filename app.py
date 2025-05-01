@@ -62,9 +62,8 @@ def init_db():
         )
     ''')
 
-    # ✅ sbd_protocol_schemas table (🔥 this was missing!)
+    # ✅ sbd_protocol_schemas table
     c.execute('''
-
         CREATE TABLE IF NOT EXISTS sbd_protocol_schemas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT,
@@ -73,16 +72,20 @@ def init_db():
         )
     ''')
 
-    # ✅ Seed default admin user if not present
-    c.execute("SELECT * FROM users WHERE username = 'admin'")
-    if not c.fetchone():
-        c.execute('''
-            INSERT INTO users (username, password, email, role)
-            VALUES (?, ?, ?, ?)
-        ''', ('admin', 'admin', 'admin@example.com', 'admin'))
+    # === Schema Patch: Add missing columns if they don't exist ===
+    try:
+        c.execute("ALTER TABLE test_registry ADD COLUMN date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    except sqlite3.OperationalError:
+        pass
+
+    try:
+        c.execute("ALTER TABLE sbd_protocol_schemas ADD COLUMN timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    except sqlite3.OperationalError:
+        pass
 
     conn.commit()
     conn.close()
+
 
 def load_memory():
     conn = get_connection()
@@ -134,6 +137,28 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# === Apply Theme Colors ===
+def apply_theme(theme):
+    if theme == "Padres":
+        st.markdown("<style>body { background-color: #2b2b2b; color: #ffc107; }</style>", unsafe_allow_html=True)
+    elif theme == "Chargers":
+        st.markdown("<style>body { background-color: #001c54; color: #ffe600; }</style>", unsafe_allow_html=True)
+    elif theme == "Dark Mode":
+        st.markdown("<style>body { background-color: #1e1e1e; color: #f5f5f5; }</style>", unsafe_allow_html=True)
+    elif theme == "Light Mode":
+        st.markdown("<style>body { background-color: #ffffff; color: #000000; }</style>", unsafe_allow_html=True)
+    elif theme == "Sunset":
+        st.markdown("<style>body { background-color: #ffccbb; color: #4b1c1c; }</style>", unsafe_allow_html=True)
+    elif theme == "Minty":
+        st.markdown("<style>body { background-color: #e0fff4; color: #225544; }</style>", unsafe_allow_html=True)
+    elif theme == "Matrix":
+        st.markdown("<style>body { background-color: #000000; color: #00ff00; }</style>", unsafe_allow_html=True)
+
+# Retrieve and apply theme
+current_theme = st.session_state.get("theme", "Padres")
+apply_theme(current_theme)
+
 # Ensure database is initialized only once per session, after Streamlit fully loads
 if "db_initialized" not in st.session_state:
     init_db()
@@ -160,23 +185,39 @@ core_pages = [
 
 st.sidebar.markdown("### 🧪 Experimental")
 experimental_pages = [
-    "SkyDome (Coming Soon)",
-    "Predictive (Coming Soon)"
+    "SkyDome",
+    "Predictive"
 ]
 
 page = st.sidebar.radio("Navigate", core_pages + experimental_pages)
 
 st.sidebar.markdown("### 🎨 Theme Mode")
-theme_mode = st.sidebar.radio("Choose Theme", ["Padres", "Chargers"], key="theme_toggle")
+# ✅ Theme Selector (Dropdown)
+st.sidebar.markdown("### 🎨 Theme Mode")
+available_themes = ["Padres", "Chargers", "Dark Mode", "Light Mode", "Sunset", "Minty", "Matrix"]
+theme_mode = st.sidebar.selectbox("Choose Theme", available_themes, key="theme_toggle")
 
-# Store in session
+# Store theme in session
 st.session_state["theme"] = theme_mode
+
 
 
 # HOME PAGE
 if page == "Home":
     st.title("Welcome to Mat-GPT v7.0")
-    st.markdown("This is the official Mat-GPT v7.0 application — with memory, uploads, previews, test logging, and more.")
+    st.markdown("""
+    This is your starting point to explore all Mat-GPT v7.0 tools.
+
+    🧭 **What this does:**  
+    Acts as your dashboard. From here, you can upload files, launch modules, or just wander.
+
+    ✅ **Use this page to:**  
+    - Upload files  
+    - Pick tools from the left sidebar  
+    - Learn what each module does before diving in
+    """)
+
+   st.markdown("This is the official Mat-GPT v7.0 application — with memory, uploads, previews, test logging, and more.")
     st.info("To begin, choose a module from the left sidebar. Or just click around and pretend you know what you're doing. 😄")
 
     st.markdown("""
@@ -201,8 +242,22 @@ if page == "Home":
 # ==============================
 # CHAT MODULE (Restored)
 # ==============================
+
 elif page == "Chat":
     st.title("💬 Chat with Mat-GPT")
+    st.markdown("""
+    🤖 **Purpose:**  
+    Interact with Mat-GPT using natural language to ask questions about your data.
+
+    🛠️ **How it works:**  
+    - Chat history is stored across sessions  
+    - Future hooks will include file context + assistant memory  
+
+    🧪 **Try asking:**  
+    - “What is the latency trend in my last upload?”  
+    - “Can you summarize my recent SkyLink session?”
+    """)
+
     theme = st.session_state.get("theme", "Padres")
     padres_joke = "⚾ Ready to debug like a Friar with a flair for flair!"
     chargers_joke = "⚡ Let’s bolt through your data like it’s 4th & inches!"
@@ -280,9 +335,23 @@ elif page == "Preview":
             st.warning("Unknown file format. Cannot preview.")
     else:
         st.warning("No files found in upload directory.")
-elif page == "Test Registry":
+
+   elif page == "Test Registry":
     st.title("🧪 Test Registry")
-    conn = get_connection()
+    st.markdown("""
+    📘 **Purpose:**  
+    Log and review structured tests across devices and profiles.
+
+    🔍 **What it solves:**  
+    - Tracks test sender/receiver/device profiles  
+    - Provides historical records of test sessions  
+
+    🛠️ **How to use:**  
+    - Fill out sender, receiver, and optional profile  
+    - Submitted tests appear in a live, filterable registry
+    """)
+
+   conn = get_connection()
     c = conn.cursor()
 
     st.subheader("Register New Test")
@@ -318,8 +387,20 @@ elif page == "Test Registry":
 
     conn.close()
 # SBD ANALYZER PAGE
+
 elif page == "SBD Analyzer":
     st.title("🛰️ SBD Analyzer (Prototype)")
+    st.markdown("""
+    📦 **Purpose:**  
+    Decode binary SBD payloads using schema definitions.
+
+    ⚙️ **How it works:**  
+    - Upload a `.sbd` file  
+    - Upload an optional `.json` schema for decoding  
+    - Save schema definitions to reuse later  
+
+    💡 *Schema decoding coming in v7.1*
+    """)
 
     sbd_file = st.file_uploader("Upload an SBD binary file", type=["sbd"])
 
@@ -1223,6 +1304,60 @@ elif page == "Session Browser":
             st.write(f"📁 {f[0]} | Session: {f[1]} | Test: {f[2]} | Type: {f[3]} | Time: {f[4]}")
     else:
         st.info("No file tags recorded yet.")
+        
+# ==============================
+# User Management Page (Login / Users)
+# ==============================
+
+elif page == "Login / Users":
+    st.title("👥 User Management")
+
+    st.markdown("""
+    Manage Mat-GPT user accounts and roles.
+
+    🔐 This tool shows the current user table and allows adding new users to the database. 
+    Admins can expand this later to edit or delete users.
+    """)
+
+    conn = get_connection()
+    c = conn.cursor()
+
+    # View existing users
+    st.subheader("📋 Registered Users")
+    c.execute("SELECT id, username, email, role FROM users ORDER BY id ASC")
+    users = c.fetchall()
+
+    if users:
+        for user in users:
+            st.markdown(f"**👤 {user[1]}** — {user[2]} ({user[3]})")
+    else:
+        st.info("No users registered yet.")
+
+    st.divider()
+    st.subheader("➕ Add New User")
+
+    with st.form("add_user_form"):
+        new_username = st.text_input("Username")
+        new_password = st.text_input("Password", type="password")
+        new_email = st.text_input("Email")
+        new_role = st.selectbox("Role", ["admin", "user"])
+
+        submit_user = st.form_submit_button("Add User")
+
+        if submit_user and new_username and new_password:
+            try:
+                c.execute('''
+                    INSERT INTO users (username, password, email, role)
+                    VALUES (?, ?, ?, ?)
+                ''', (new_username, new_password, new_email, new_role))
+                conn.commit()
+                st.success(f"✅ User '{new_username}' added.")
+            except sqlite3.IntegrityError:
+                st.error("❌ Username already exists.")
+
+    conn.close()
+
+
 # ==============================
 # Part 12: Auto-Tagging Framework + Upload Hook
 # ==============================
