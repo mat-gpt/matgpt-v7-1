@@ -191,7 +191,6 @@ experimental_pages = [
 
 page = st.sidebar.radio("Navigate", core_pages + experimental_pages)
 
-st.sidebar.markdown("### 🎨 Theme Mode")
 # ✅ Theme Selector (Dropdown)
 st.sidebar.markdown("### 🎨 Theme Mode")
 available_themes = ["Padres", "Chargers", "Dark Mode", "Light Mode", "Sunset", "Minty", "Matrix"]
@@ -412,13 +411,10 @@ elif page == "SBD Analyzer":
 
         st.info("SBD decoding logic not yet implemented — feature coming in v7.1.")
 
-# SKYDOME PAGE (Placeholder)
-elif page == "SkyDome (Coming Soon)":
-    st.title("🌐 SkyDome Analyzer")
-    st.info("SkyDome visibility grading and overlay tools coming in Mat-GPT v7.2.")
+
 
 # PREDICTIVE PAGE (Placeholder)
-elif page == "Predictive (Coming Soon)":
+elif page == "Predictive":
     st.title("📊 Predictive Modeling")
     st.info("Predictive modeling and test behavior forecasting will be part of Mat-GPT v7.4.")
     st.divider()
@@ -573,7 +569,7 @@ def save_session(session_id):
 save_session(session_id)
 
 # Add Predictive Modeling Base
-if page == "Predictive (Coming Soon)":
+if page == "Predictive":
     st.title("📈 Predictive Modeling Dashboard")
 
     st.info(f"Session ID: {session_id}")
@@ -667,64 +663,148 @@ def create_skydome_tables():
 
 create_skydome_tables()
 
-# SkyDome Analyzer Active
-if page == "SkyDome (Coming Soon)":
-    st.title("🌐 SkyDome Analyzer - Photo Capture")
+if page == "SkyDome":
+    st.title("🌐 SkyDome Analyzer")
+    skydome_tabs = st.tabs([
+        "📸 Upload Photos",
+        "📝 Grade Visibility",
+        "📊 Radar Chart",
+        "🧩 Composite Overlay"
+    ])
 
-    st.markdown("""
-        Upload directional installation photos for SkyDome visibility mapping.
-        
-        **Recommended views:** North, East, South, West.
-    """)
+    with skydome_tabs[0]:
+        # PLACEHOLDER: paste your 'Photo Upload + Registry' logic here
+    st.subheader("📸 Upload SkyDome Photos")
 
-    photo_directions = ["North", "East", "South", "West"]
+    photo = st.file_uploader("Upload Photo (label as 'North', 'South', etc.)", type=["jpg", "jpeg", "png"])
+    direction = st.selectbox("View Direction", ["North", "South", "East", "West"])
 
-    uploaded_photos = {}
-    for direction in photo_directions:
-        uploaded_photos[direction] = st.file_uploader(f"Upload {direction} Facing Photo", type=["jpg", "jpeg", "png"], key=f"photo_{direction}")
+    if photo and direction:
+        photo_path = os.path.join(UPLOAD_DIR, photo.name)
+        with open(photo_path, "wb") as f:
+            f.write(photo.getbuffer())
 
-    # Save Photos and Register
-    if st.button("Save Uploaded Photos"):
-        saved = False
-        for direction, file_obj in uploaded_photos.items():
-            if file_obj:
-                save_path = os.path.join(UPLOAD_DIR, f"{direction}_{file_obj.name}")
-                with open(save_path, "wb") as f:
-                    f.write(file_obj.getbuffer())
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute('''
+            INSERT INTO skydome_photos (view_direction, filename, path)
+            VALUES (?, ?, ?)
+        ''', (direction, photo.name, photo_path))
+        conn.commit()
+        conn.close()
 
-                conn = get_connection()
-                c = conn.cursor()
-                c.execute('''
-                    INSERT INTO skydome_photos (view_direction, filename, path)
-                    VALUES (?, ?, ?)
-                ''', (direction, file_obj.name, save_path))
-                conn.commit()
-                conn.close()
-
-                st.success(f"✅ Saved {direction} photo: {file_obj.name}")
-                saved = True
-
-        if not saved:
-            st.warning("⚠️ No photos were uploaded to save.")
+        st.success(f"✅ Saved photo as {photo.name} for {direction} view")
 
     st.divider()
-    st.subheader("Previously Uploaded Photos")
+    st.subheader("🗂️ Uploaded SkyDome Photos")
 
     conn = get_connection()
     c = conn.cursor()
-    c.execute('SELECT id, view_direction, filename, upload_time FROM skydome_photos ORDER BY upload_time DESC')
-    previous_photos = c.fetchall()
+    c.execute("SELECT view_direction, filename, upload_time FROM skydome_photos ORDER BY upload_time DESC")
+    rows = c.fetchall()
     conn.close()
 
-    if previous_photos:
-        for photo in previous_photos:
-            st.write(f"🖼️ {photo[1]} View | File: {photo[2]} | Uploaded: {photo[3]}")
+    if rows:
+        for row in rows:
+            st.write(f"📷 {row[1]} | View: {row[0]} | Uploaded: {row[2]}")
     else:
-        st.info("No photos uploaded yet. Begin your SkyDome mapping now!")
+        st.info("No SkyDome photos uploaded yet.")
 
-# ==============================
-# End of SkyDome Expansion (Photo Upload + Registry)
-# ==============================
+    with skydome_tabs[1]:
+        # PLACEHOLDER: paste your 'Visibility Grading' form logic here
+    st.subheader("📊 Grade Visibility")
+
+    view = st.selectbox("View Direction", ["North", "South", "East", "West"])
+    az_start = st.slider("Azimuth Start (°)", 0, 360, 0)
+    az_end = st.slider("Azimuth End (°)", 0, 360, 90)
+    el_min = st.slider("Min Elevation (°)", 0, 90, 10)
+    el_max = st.slider("Max Elevation (°)", 0, 90, 70)
+    grade = st.selectbox("Visibility Grade", ["A", "B", "C", "D", "E", "F"])
+    notes = st.text_area("Notes")
+
+    if st.button("💾 Submit Grade"):
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute('''
+            INSERT INTO skydome_visibility (view_direction, azimuth_start, azimuth_end,
+            elevation_min, elevation_max, visibility_grade, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (view, az_start, az_end, el_min, el_max, grade, notes))
+        conn.commit()
+        conn.close()
+        st.success("✅ Visibility data saved.")
+
+    st.divider()
+    st.subheader("📄 Visibility Entries")
+
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT view_direction, azimuth_start, azimuth_end, elevation_min, elevation_max, visibility_grade, timestamp FROM skydome_visibility ORDER BY timestamp DESC")
+    rows = c.fetchall()
+    conn.close()
+
+    if rows:
+        for r in rows:
+            st.write(f"🧭 {r[0]} | Az: {r[1]}–{r[2]}° | El: {r[3]}–{r[4]}° | Grade: {r[5]} | ⏱ {r[6]}")
+    else:
+        st.info("No visibility grading data found.")
+
+    with skydome_tabs[2]:
+        # PLACEHOLDER: paste your 'Radar Chart' logic here
+    st.subheader("📈 Visibility Radar Chart")
+
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT view_direction, visibility_grade FROM skydome_photos WHERE visibility_grade IS NOT NULL")
+    results = c.fetchall()
+    conn.close()
+
+    if results:
+        import matplotlib.pyplot as plt
+        import numpy as np
+
+        labels = ["North", "East", "South", "West"]
+        scores = {label: 0 for label in labels}
+
+        for view, grade in results:
+            if view in scores and grade in grade_to_score:
+                scores[view] = grade_to_score[grade]
+
+        values = [scores[dir] for dir in labels]
+        values += values[:1]  # close the loop
+
+        angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False).tolist()
+        angles += angles[:1]
+
+        fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
+        ax.plot(angles, values, marker='o')
+        ax.fill(angles, values, alpha=0.25)
+        ax.set_xticks(angles[:-1])
+        ax.set_xticklabels(labels)
+        ax.set_title("SkyDome Visibility Radar")
+        ax.set_ylim(0, 5)
+
+        st.pyplot(fig)
+    else:
+        st.info("No graded views to plot.")
+
+    with skydome_tabs[3]:
+        # PLACEHOLDER: paste your 'Composite Overlay' viewer logic here
+    st.subheader("🖼️ Composite Overlay Viewer")
+
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT view_direction, filename, path FROM skydome_photos ORDER BY upload_time DESC")
+    photos = c.fetchall()
+    conn.close()
+
+    if photos:
+        for p in photos:
+            st.markdown(f"**📍 {p[0]}** — {p[1]}")
+            st.image(p[2], use_column_width=True)
+    else:
+        st.info("No photos to display.")
+
 # ==============================
 # SkyDome Analyzer Expansion - Part 2 (Visibility Grading + Metadata)
 # ==============================
@@ -751,72 +831,7 @@ def create_skydome_visibility_table():
 
 create_skydome_visibility_table()
 
-# Active SkyDome Visibility Input Page
-if page == "SkyDome (Coming Soon)":
-    st.title("🌐 SkyDome Analyzer - Visibility Grading")
-
-    st.markdown("""
-    Record azimuth/elevation metadata and assign visibility grades (A–F scale) for each view.
-    
-    - **A = Completely Clear**
-    - **F = Completely Blocked**
-    """)
-
-    st.divider()
-    st.subheader("Submit Visibility Grades")
-
-    with st.form("visibility_grading_form"):
-        selected_direction = st.selectbox("Select View Direction", ["North", "East", "South", "West"])
-        az_start = st.slider("Azimuth Start (°)", 0, 360, 0)
-        az_end = st.slider("Azimuth End (°)", 0, 360, 90)
-        el_min = st.slider("Minimum Elevation (°)", 0, 90, 5)
-        el_max = st.slider("Maximum Elevation (°)", 0, 90, 90)
-        grade = st.selectbox("Visibility Grade", ["A", "B", "C", "D", "E", "F"])
-        notes = st.text_area("Additional Notes (Optional)", "")
-
-        submit_visibility = st.form_submit_button("Save Visibility Entry")
-
-        if submit_visibility:
-            conn = get_connection()
-            c = conn.cursor()
-            c.execute('''
-                INSERT INTO skydome_visibility (
-                    view_direction, azimuth_start, azimuth_end,
-                    elevation_min, elevation_max, visibility_grade, notes
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (selected_direction, az_start, az_end, el_min, el_max, grade, notes))
-            conn.commit()
-            conn.close()
-
-            st.success(f"✅ Visibility entry for {selected_direction} saved.")
-
-    st.divider()
-    st.subheader("Saved Visibility Entries")
-
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute('SELECT view_direction, azimuth_start, azimuth_end, elevation_min, elevation_max, visibility_grade, notes, timestamp FROM skydome_visibility ORDER BY timestamp DESC')
-    visibility_entries = c.fetchall()
-    conn.close()
-
-    if visibility_entries:
-        for entry in visibility_entries:
-            st.markdown(f"""
-            - 📍 **{entry[0]}** View
-            - Azimuth Range: **{entry[1]}° to {entry[2]}°**
-            - Elevation Range: **{entry[3]}° to {entry[4]}°**
-            - Visibility Grade: **{entry[5]}**
-            - Notes: {entry[6]}
-            - Timestamp: {entry[7]}
-            """)
-            st.divider()
-    else:
-        st.info("No visibility entries logged yet. Start grading your views!")
-
-# ==============================
-# End of SkyDome Analyzer Expansion - Part 2
-# ==============================
-# ==============================
+============================
 # SkyDome Analyzer - Visibility Grading Expansion
 # ==============================
 
@@ -845,60 +860,6 @@ try:
 except:
     pass
 
-# SkyDome Visibility Grading Form
-if page == "SkyDome (Coming Soon)":
-    st.title("🌐 SkyDome Analyzer - Visibility Grading")
-
-    st.markdown("""
-        Assign azimuth, elevation, and visibility grades (A–F) to uploaded photos.
-        
-        **Grades:**
-        - A = Perfect Sky
-        - B = Minor Obstruction
-        - C = Moderate Obstruction
-        - D = Heavy Obstruction
-        - E = Nearly Blocked
-        - F = Fully Blocked
-    """)
-
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute('SELECT id, view_direction, filename FROM skydome_photos ORDER BY upload_time DESC')
-    photo_entries = c.fetchall()
-    conn.close()
-
-    if photo_entries:
-        for entry in photo_entries:
-            photo_id, direction, filename = entry
-
-            st.divider()
-            st.subheader(f"🖼️ {direction} View – {filename}")
-
-            with st.form(f"grading_form_{photo_id}"):
-                azimuth = st.slider(f"Azimuth for {direction}", 0, 360, 0, key=f"az_{photo_id}")
-                elevation = st.slider(f"Elevation for {direction}", 0, 90, 0, key=f"el_{photo_id}")
-                visibility_grade = st.selectbox(
-                    f"Visibility Grade for {direction}",
-                    ["A", "B", "C", "D", "E", "F"],
-                    key=f"grade_{photo_id}"
-                )
-
-                submit = st.form_submit_button("Save Visibility Grade")
-
-                if submit:
-                    conn = get_connection()
-                    c = conn.cursor()
-                    c.execute('''
-                        UPDATE skydome_photos
-                        SET azimuth = ?, elevation = ?, visibility_grade = ?
-                        WHERE id = ?
-                    ''', (azimuth, elevation, visibility_grade, photo_id))
-                    conn.commit()
-                    conn.close()
-                    st.success(f"✅ Saved visibility data for {direction} view!")
-
-    else:
-        st.info("No photos uploaded yet. Please upload photos first.")
 
 # View Graded Results (Summary Section)
     st.divider()
@@ -935,49 +896,6 @@ grade_to_score = {
     "F": 0
 }
 
-# SkyDome Radar Chart Display
-if page == "SkyDome (Coming Soon)":
-    st.title("🌐 SkyDome Analyzer - Radar Chart")
-
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute('SELECT view_direction, visibility_grade FROM skydome_photos WHERE visibility_grade IS NOT NULL')
-    graded_data = c.fetchall()
-    conn.close()
-
-    if graded_data:
-        st.subheader("Radar Chart of Visibility Grades")
-
-        directions = []
-        scores = []
-
-        for direction, grade in graded_data:
-            if grade in grade_to_score:
-                directions.append(direction)
-                scores.append(grade_to_score[grade])
-
-        if directions and scores:
-            # Radar requires circular duplication
-            directions.append(directions[0])
-            scores.append(scores[0])
-
-            angles = [n / float(len(directions)) * 2 * 3.14159265 for n in range(len(directions))]
-
-            fig, ax = plt.subplots(figsize=(6,6), subplot_kw=dict(polar=True))
-            ax.set_theta_offset(3.14159265 / 2)
-            ax.set_theta_direction(-1)
-
-            plt.xticks(angles[:-1], directions[:-1])
-
-            ax.plot(angles, scores, linewidth=2, linestyle='solid')
-            ax.fill(angles, scores, alpha=0.25)
-
-            st.pyplot(fig)
-
-        else:
-            st.info("No valid graded directions to plot.")
-    else:
-        st.info("No graded SkyDome views yet.")
 
 # ==============================
 # End of SkyDome Analyzer - Radar Chart Visualization
@@ -989,7 +907,7 @@ if page == "SkyDome (Coming Soon)":
 from sklearn.metrics import mean_squared_error
 
 # Enhanced Predictive Modeling Page
-if page == "Predictive (Coming Soon)":
+if page == "Predictive":
     st.title("📈 Predictive Modeling Dashboard (Expanded)")
 
     st.info(f"Session ID: {session_id}")
@@ -1075,97 +993,7 @@ if page == "Predictive (Coming Soon)":
 # SkyDome Composite Overlay Viewer
 # ==============================
 
-# SkyDome Composite Page
-if page == "SkyDome (Coming Soon)":
-    st.title("🌐 SkyDome Analyzer - Composite Overlay")
 
-    st.markdown("""
-        View and manage multiple directional SkyDome installation photos together.
-
-        **Use case:**
-        - Compare North/East/South/West photos side-by-side
-        - Evaluate obstruction levels visually
-    """)
-
-    st.divider()
-    st.subheader("Uploaded Photos")
-
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute('SELECT view_direction, filename, path FROM skydome_photos ORDER BY view_direction ASC')
-    all_photos = c.fetchall()
-    conn.close()
-
-    if all_photos:
-        photo_cols = st.columns(2)
-
-        for idx, photo in enumerate(all_photos):
-            view_direction, filename, path = photo
-
-            if os.path.exists(path):
-                with open(path, "rb") as img_file:
-                    img_bytes = img_file.read()
-                    b64_img = base64.b64encode(img_bytes).decode()
-
-                img_html = f'<img src="data:image/jpeg;base64,{b64_img}" width="100%" style="border:1px solid #ccc; border-radius:8px; margin-bottom:10px;"/>'
-
-                with photo_cols[idx % 2]:
-                    st.markdown(f"**{view_direction} View**")
-                    st.markdown(img_html, unsafe_allow_html=True)
-                    st.caption(f"📂 {filename}")
-            else:
-                st.warning(f"⚠️ Missing file: {filename}")
-
-    else:
-        st.info("No installation photos uploaded yet.")
-
-    st.divider()
-
-    # Bulk Photo Management Section
-    st.subheader("Manage Uploaded Photos")
-
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute('SELECT id, view_direction, filename FROM skydome_photos ORDER BY upload_time DESC')
-    photo_list = c.fetchall()
-    conn.close()
-
-    if photo_list:
-        selected_to_delete = st.multiselect(
-            "Select photos to delete:",
-            [f"{photo[1]} - {photo[2]}" for photo in photo_list]
-        )
-
-        if st.button("Delete Selected Photos"):
-            deleted = False
-            for selected_entry in selected_to_delete:
-                for photo in photo_list:
-                    db_id, direction, filename = photo
-                    if selected_entry == f"{direction} - {filename}":
-                        conn = get_connection()
-                        c = conn.cursor()
-                        c.execute('DELETE FROM skydome_photos WHERE id = ?', (db_id,))
-                        conn.commit()
-                        conn.close()
-
-                        try:
-                            os.remove(os.path.join(UPLOAD_DIR, filename))
-                        except Exception:
-                            pass  # Ignore if already deleted
-
-                        deleted = True
-
-            if deleted:
-                st.success("✅ Selected photos deleted.")
-            else:
-                st.warning("⚠️ No matching photos found to delete.")
-
-    else:
-        st.info("No photos available for deletion.")
-
-# ==============================
-# End of SkyDome Composite Overlay Viewer
-# ==============================
 # ==============================
 # Assistant Memory Editor - Prompt Management Tool
 # ==============================
@@ -2426,3 +2254,5 @@ if page == "Preview":
 # ==============================
 # End of Part 26 – TCP Retransmission Detector
 # ==============================
+
+
