@@ -74,6 +74,10 @@ def init_db():
 
     # === Schema Patch: Add missing columns if they don't exist ===
     try:
+        # Add your code here
+        pass
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
         c.execute("ALTER TABLE test_registry ADD COLUMN date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     except sqlite3.OperationalError:
         pass
@@ -294,22 +298,23 @@ elif page == "Preview":
         selected_file = st.selectbox("Select a file to preview", uploaded_files)
         file_path = os.path.join(UPLOAD_DIR, selected_file)
 
-        if selected_file.endswith(".csv"):
-            try:
-                df = pd.read_csv(file_path)
-                st.success(f"Loaded {len(df)} rows from {selected_file}")
+    if selected_file.endswith(".csv"):
+        try:
+            df = pd.read_csv(file_path)
+            st.success(f"Loaded {len(df)} rows from {selected_file}")
+        except Exception as e:
+            st.error(f"❌ Failed to load CSV file: {e}")
+            # Filter + Chat Preview
+            columns = df.columns.tolist()
+            selected_columns = st.multiselect("Select columns to include", columns, default=columns)
 
-                # Filter + Chat Preview
-                columns = df.columns.tolist()
-                selected_columns = st.multiselect("Select columns to include", columns, default=columns)
+            if selected_columns:
+                filtered_df = df[selected_columns]
 
-                if selected_columns:
-                    filtered_df = df[selected_columns]
+                row_limit = st.slider("Rows to preview", 10, 1000, 50)
+                start_index = st.number_input("Start from row", 0, len(filtered_df) - 1, 0)
 
-                    row_limit = st.slider("Rows to preview", 10, 1000, 50)
-                    start_index = st.number_input("Start from row", 0, len(filtered_df) - 1, 0)
-
-                    st.markdown(f"Streaming **{row_limit}** rows from index **{start_index}** with columns: {', '.join(selected_columns)}")
+                st.markdown(f"Streaming **{row_limit}** rows from index **{start_index}** with columns: {', '.join(selected_columns)}")
 
 for idx in range(start_index, min(start_index + row_limit, len(filtered_df))):
     row = filtered_df.iloc[idx]
@@ -327,10 +332,11 @@ for idx in range(start_index, min(start_index + row_limit, len(filtered_df))):
         st.error(f"⚠️ Chat preview error: {e}")
 
 
-except pd.errors.EmptyDataError:
-    st.error("❌ The selected file is empty or invalid.")
-except Exception as e:
-    st.error(f"❌ Failed to preview file: {e}")
+    except pd.errors.EmptyDataError:
+        st.error("❌ The selected file is empty or invalid.")
+        st.error("❌ The selected file is empty or invalid.")
+    except Exception as e:
+        st.error(f"❌ Failed to preview file: {e}")
 
 if selected_file.endswith(".pcap"):
     st.info("PCAP preview not yet supported — decoder coming soon.")
@@ -712,7 +718,8 @@ if page == "SkyDome":
 
     with skydome_tabs[0]:
         # PLACEHOLDER: paste your 'Photo Upload + Registry' logic here
-    st.subheader("📸 Upload SkyDome Photos")
+        st.write("This is the SkyDome Photos Upload section. Add your logic here.")
+        st.subheader("📸 Upload SkyDome Photos")
 
     photo = st.file_uploader("Upload Photo (label as 'North', 'South', etc.)", type=["jpg", "jpeg", "png"])
     direction = st.selectbox("View Direction", ["North", "South", "East", "West"])
@@ -750,7 +757,9 @@ if page == "SkyDome":
 
     with skydome_tabs[1]:
         # PLACEHOLDER: paste your 'Visibility Grading' form logic here
-    st.subheader("📊 Grade Visibility")
+        st.subheader("📊 Grade Visibility")
+    pass  # Placeholder for future implementation
+    pass  # Placeholder for future implementation
 
     view = st.selectbox("View Direction", ["North", "South", "East", "West"])
     az_start = st.slider("Azimuth Start (°)", 0, 360, 0)
@@ -789,7 +798,9 @@ if page == "SkyDome":
 
     with skydome_tabs[2]:
         # PLACEHOLDER: paste your 'Radar Chart' logic here
-    st.subheader("📈 Visibility Radar Chart")
+        st.subheader("📈 Visibility Radar Chart")
+    pass  # Placeholder for future implementation
+    pass  # Placeholder for future implementation
 
     conn = get_connection()
     c = conn.cursor()
@@ -828,7 +839,7 @@ if page == "SkyDome":
 
     with skydome_tabs[3]:
         # PLACEHOLDER: paste your 'Composite Overlay' viewer logic here
-    st.subheader("🖼️ Composite Overlay Viewer")
+        st.subheader("🖼️ Composite Overlay Viewer")
 
     conn = get_connection()
     c = conn.cursor()
@@ -869,7 +880,7 @@ def create_skydome_visibility_table():
 
 create_skydome_visibility_table()
 
-============================
+#============================
 # SkyDome Analyzer - Visibility Grading Expansion
 # ==============================
 
