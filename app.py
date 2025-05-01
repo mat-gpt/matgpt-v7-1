@@ -315,8 +315,8 @@ for idx in range(start_index, min(start_index + row_limit, len(filtered_df))):
     row = filtered_df.iloc[idx]
     row_dict = row.to_dict()
     formatted_row = "\n".join([f"**{k}**: {v}" for k, v in row_dict.items()])
-
     st.chat_message("user").markdown(f"Here’s the next row previewed:\n\n{formatted_row}")
+
     try:
         st.chat_message("assistant").markdown(
             f"🤖 *(Assistant)*: Interesting! Looks like row {idx} contains some juicy details... 🕵️\n"
