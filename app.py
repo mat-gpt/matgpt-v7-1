@@ -216,7 +216,7 @@ if page == "Home":
     - Learn what each module does before diving in
     """)
 
-   st.markdown("This is the official Mat-GPT v7.0 application — with memory, uploads, previews, test logging, and more.")
+    st.markdown("This is the official Mat-GPT v7.0 application — with memory, uploads, previews, test logging, and more.")
     st.info("To begin, choose a module from the left sidebar. Or just click around and pretend you know what you're doing. 😄")
 
     st.markdown("""
@@ -237,6 +237,7 @@ if page == "Home":
         with open(file_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
         st.success(f"✅ File {uploaded_file.name} uploaded successfully to {UPLOAD_DIR}/")
+
 
 # ==============================
 # CHAT MODULE (Restored)
