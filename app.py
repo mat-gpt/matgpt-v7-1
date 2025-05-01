@@ -144,19 +144,33 @@ if "user" not in st.session_state:
 
 # Sidebar Navigation
 st.sidebar.title("🧠 Mat-GPT Modules")
-page = st.sidebar.radio("Navigate", [
+
+st.sidebar.markdown("### 🔍 Core Tools")
+core_pages = [
     "Home",
     "Upload",
     "Preview",
-    "Chat",  # ✅ Add this line
+    "Chat",
     "Test Registry",
     "SBD Analyzer",
     "Memory Editor",
     "Session Browser",
-    "Login / Users",
+    "Login / Users"
+]
+
+st.sidebar.markdown("### 🧪 Experimental")
+experimental_pages = [
     "SkyDome (Coming Soon)",
     "Predictive (Coming Soon)"
-])
+]
+
+page = st.sidebar.radio("Navigate", core_pages + experimental_pages)
+
+st.sidebar.markdown("### 🎨 Theme Mode")
+theme_mode = st.sidebar.radio("Choose Theme", ["Padres", "Chargers"], key="theme_toggle")
+
+# Store in session
+st.session_state["theme"] = theme_mode
 
 
 # HOME PAGE
@@ -189,14 +203,20 @@ if page == "Home":
 # ==============================
 elif page == "Chat":
     st.title("💬 Chat with Mat-GPT")
+    theme = st.session_state.get("theme", "Padres")
+    padres_joke = "⚾ Ready to debug like a Friar with a flair for flair!"
+    chargers_joke = "⚡ Let’s bolt through your data like it’s 4th & inches!"
+    default_intro = padres_joke if theme == "Padres" else chargers_joke
 
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = [
-            ("assistant", "Welcome to the Mat-GPT chat! I'm ready to help you analyze your data, decode logs, or rant about bad CSVs.")
+            ("assistant", f"💬 Welcome to the Mat-GPT chat!\n\n{default_intro}")
         ]
 
+
     for role, message in st.session_state.chat_history:
-        st.chat_message(role).markdown(message)
+        with st.chat_message(role):
+            st.markdown(message)
 
     user_input = st.chat_input("Ask Mat-GPT something...")
 
@@ -204,10 +224,10 @@ elif page == "Chat":
         st.chat_message("user").markdown(user_input)
         st.session_state.chat_history.append(("user", user_input))
 
-        # STUBBED RESPONSE – works without OpenAI key
-        response = f"🤖 Mat-GPT says: '{user_input}' (replace this with real model output)"
-        st.chat_message("assistant").markdown(response)
-        st.session_state.chat_history.append(("assistant", response))
+        # Placeholder response (future: hook to OpenAI or local model)
+        reply = f"🤖 Mat-GPT ({theme} mode) says: '{user_input}' — nice try, data wrangler!"
+        st.chat_message("assistant").markdown(reply)
+        st.session_state.chat_history.append(("assistant", reply))
 
 
 # PREVIEW PAGE
@@ -379,173 +399,51 @@ elif page == "Predictive (Coming Soon)":
 import struct
 
 # Section: Schema Upload
-st.divider()
-st.subheader("Optional: Upload Protocol Schema (JSON)")
-
-schema_file = st.file_uploader("Upload a JSON protocol schema", type=["json"], key="schema")
-
-protocol_schema = None
-if schema_file:
-    try:
-        protocol_schema = json.load(schema_file)
-        st.success(f"✅ Schema {schema_file.name} loaded successfully.")
-    except Exception as e:
-        st.error(f"❌ Failed to parse schema: {e}")
-
-# Section: Decode Attempt
-if protocol_schema and sbd_file:
+if page == "SBD Analyzer":
     st.divider()
-    st.subheader("SBD Decoding Preview")
+    st.subheader("Optional: Upload Protocol Schema (JSON)")
 
-    raw_bytes = sbd_file.getvalue()
-    hex_stream = ''.join(f'{b:02X}' for b in raw_bytes)
-    st.code(hex_stream[:500] + ("..." if len(hex_stream) > 500 else ""), language="bash")
+    schema_file = st.file_uploader("Upload a JSON protocol schema", type=["json"], key="schema")
 
-    # Assume schema has field list
-    fields = protocol_schema.get("fields", [])
-
-    if fields:
+    protocol_schema = None
+    if schema_file:
         try:
-            decoded_output = {}
-            cursor = 0
-            for field in fields:
-                field_name = field.get("name", "Unnamed")
-                field_type = field.get("type", "uint8")
-                field_length = field.get("length", 1)
+            protocol_schema = json.load(schema_file)
+            st.success(f"✅ Schema {schema_file.name} loaded successfully.")
+        except Exception as e:
+            st.error(f"❌ Failed to parse schema: {e}")
 
-                if field_type == "uint8":
-                    val = raw_bytes[cursor]
-                    decoded_output[field_name] = val
-                    cursor += 1
+    st.divider()
+    st.subheader("Save Protocol Schema (Manual Upload)")
 
-                elif field_type == "uint16":
-                    val = int.from_bytes(raw_bytes[cursor:cursor+2], "big")
-                    decoded_output[field_name] = val
-                    cursor += 2
+    if protocol_schema:
+        save_name = st.text_input("Schema Save Name")
+        if st.button("Save Schema"):
+            conn = get_connection()
+            c = conn.cursor()
+            c.execute('''
+                INSERT INTO sbd_protocol_schemas (name, schema_json)
+                VALUES (?, ?)
+            ''', (save_name or f"Unnamed-{datetime.datetime.now().isoformat()}", json.dumps(protocol_schema)))
+            conn.commit()
+            conn.close()
+            st.success(f"✅ Schema saved as {save_name}")
 
-                elif field_type == "uint32":
-                    val = int.from_bytes(raw_bytes[cursor:cursor+4], "big")
-                    decoded_output[field_name] = val
-                    cursor += 4
+    st.divider()
+    st.subheader("Registered Protocol Schemas")
 
-                elif field_type == "bytes":
-                    val = raw_bytes[cursor:cursor+field_length]
-                    decoded_output[field_name] = base64.b64encode(val).decode()
-                    cursor += field_length
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('SELECT id, name, timestamp FROM sbd_protocol_schemas ORDER BY timestamp DESC')
+    schemas = c.fetchall()
+    conn.close()
 
-                else:
-                    decoded_output[field_name] = "Unknown Type"
-
-            st.success("✅ SBD decoded based on uploaded schema:")
-            st.json(decoded_output)
-
-            # Future: Save decoded payload into DB
-        except Exception as decode_error:
-            st.error(f"❌ Decoding failed: {decode_error}")
-
+    if schemas:
+        for schema in schemas:
+            st.markdown(f"📜 **{schema[1]}** (ID: {schema[0]}) — Saved: {schema[2]}")
     else:
-        st.warning("⚠️ No fields defined in uploaded schema.")
+        st.info("⚠️ No protocol schemas saved yet.")
 
-# Section: If No Schema Uploaded
-if 'sbd_file' in locals() and sbd_file and not protocol_schema:
-    st.info("Upload a protocol schema to decode payload.")
-
-
-# New Table for Decoded Data (future extension)
-def create_decoded_table():
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS decoded_sbd_payloads (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            file_id INTEGER,
-            decoded_json TEXT,
-            FOREIGN KEY(file_id) REFERENCES sbd_files(id)
-        )
-    ''')
-    conn.commit()
-    conn.close()
-
-create_decoded_table()
-
-# Helper Functions (Real)
-def insert_decoded_payload(file_id, decoded_json):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute('''
-        INSERT INTO decoded_sbd_payloads (file_id, decoded_json)
-        VALUES (?, ?)
-    ''', (file_id, json.dumps(decoded_json)))
-    conn.commit()
-    conn.close()
-
-# Placeholder Future Hook
-def match_protocol_schema(uploaded_schema):
-    if not uploaded_schema:
-        return "Unknown"
-    # Future expansion: match by device type
-    return "Generic Device"
-
-# Section: Future Enhancements Notes
-st.divider()
-st.subheader("Coming Enhancements")
-st.markdown("""
-- 🔜 Auto-match SBD payloads with internal known schemas
-- 🔜 Decode common message formats
-- 🔜 Save decoded results into registry for search/query
-- 🔜 Show decoding confidence scores
-- 🔜 Download decoded output as JSON
-""")
-
-# System: Database Table Setup if needed
-def initialize_registry_tables():
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS sbd_protocol_schemas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT,
-            schema_json TEXT
-        )
-    ''')
-    conn.commit()
-    conn.close()
-
-initialize_registry_tables()
-
-# Upload Protocol Schema to Local DB
-st.divider()
-st.subheader("Save Protocol Schema (Manual Upload)")
-
-if protocol_schema:
-    save_name = st.text_input("Schema Save Name")
-    if st.button("Save Schema"):
-        conn = get_connection()
-        c = conn.cursor()
-        c.execute('''
-            INSERT INTO sbd_protocol_schemas (name, schema_json)
-            VALUES (?, ?)
-        ''', (save_name or f"Unnamed-{datetime.datetime.now().isoformat()}", json.dumps(protocol_schema)))
-        conn.commit()
-        conn.close()
-        st.success(f"✅ Schema saved as {save_name}")
-
-# Section: List Saved Schemas
-st.divider()
-st.subheader("Registered Protocol Schemas")
-
-# Reload protocol schema registry from DB (SBD Analyzer context)
-conn = get_connection()
-c = conn.cursor()
-c.execute('SELECT id, name, timestamp FROM sbd_protocol_schemas ORDER BY timestamp DESC')
-schemas = c.fetchall()
-conn.close()
-
-if schemas:
-    for schema in schemas:
-        st.markdown(f"📜 **{schema[1]}** (ID: {schema[0]}) — Saved: {schema[2]}")
-else:
-    st.info("⚠️ No protocol schemas saved yet.")
 
 
 # ==============================
