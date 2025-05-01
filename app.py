@@ -311,32 +311,35 @@ elif page == "Preview":
 
                     st.markdown(f"Streaming **{row_limit}** rows from index **{start_index}** with columns: {', '.join(selected_columns)}")
 
-                    for idx in range(start_index, min(start_index + row_limit, len(filtered_df))):
-                        row = filtered_df.iloc[idx]
-                        row_dict = row.to_dict()
-                        formatted_row = "\n".join([f"**{k}**: {v}" for k, v in row_dict.items()])
+for idx in range(start_index, min(start_index + row_limit, len(filtered_df))):
+    row = filtered_df.iloc[idx]
+    row_dict = row.to_dict()
+    formatted_row = "\n".join([f"**{k}**: {v}" for k, v in row_dict.items()])
 
-                        st.chat_message("user").markdown(f"Here’s the next row previewed:\n\n{formatted_row}")
-                        st.chat_message("assistant").markdown(
-                            f"🤖 *(Assistant)*: Interesting! Looks like row {idx} contains some juicy details... 🕵️\n"
-                            f"Let's keep going — data never sleeps!"
-                        )
-                        time.sleep(0.01)
+    st.chat_message("user").markdown(f"Here’s the next row previewed:\n\n{formatted_row}")
+    try:
+        st.chat_message("assistant").markdown(
+            f"🤖 *(Assistant)*: Interesting! Looks like row {idx} contains some juicy details... 🕵️\n"
+            f"Let's keep going — data never sleeps!"
+        )
+        time.sleep(0.01)
+    except Exception as e:
+        st.error(f"⚠️ Chat preview error: {e}")
 
-                else:
-                    st.warning("Select at least one column to preview.")
 
-            except Exception as e:
-                st.error(f"❌ Failed to preview file: {e}")
+except pd.errors.EmptyDataError:
+    st.error("❌ The selected file is empty or invalid.")
+except Exception as e:
+    st.error(f"❌ Failed to preview file: {e}")
 
-        elif selected_file.endswith(".pcap"):
-            st.info("PCAP preview not yet supported — decoder coming soon.")
-        else:
-            st.warning("Unknown file format. Cannot preview.")
-    else:
-        st.warning("No files found in upload directory.")
+if selected_file.endswith(".pcap"):
+    st.info("PCAP preview not yet supported — decoder coming soon.")
+elif selected_file:
+    st.warning("Unknown file format. Cannot preview.")
+else:
+    st.warning("No files found in upload directory.")
 
-elif page == "Test Registry":
+if page == "Test Registry":
     st.title("🧪 Test Registry")
     st.markdown("""
     📘 **Purpose:**  
@@ -351,12 +354,46 @@ elif page == "Test Registry":
     - Submitted tests appear in a live, filterable registry
     """)
 
-conn = get_connection()
-c = conn.cursor()
+    # Use a context manager to ensure the database connection is properly closed
+    with get_connection() as conn:
+        c = conn.cursor()
 
-    st.subheader("Register New Test")
+        st.subheader("Register New Test")
 
-    with st.form("test_registry_form"):
+        with st.form("test_registry_form"):
+            sender = st.text_input("Sender Device")
+            receiver = st.text_input("Receiver Device")
+            profile = st.text_input("Profile Name")
+
+            submitted = st.form_submit_button("Submit Entry")
+            if submitted:
+                if sender and receiver:
+                    try:
+                        c.execute('''
+                            INSERT INTO test_registry (sender, receiver, profile)
+                            VALUES (?, ?, ?)
+                        ''', (sender, receiver, profile or "None"))
+                        conn.commit()
+                        st.success("✅ Test logged.")
+                    except sqlite3.Error as db_error:
+                        st.error(f"❌ Database error: {db_error}")
+                else:
+                    st.error("Sender and Receiver fields are required.")
+
+        st.divider()
+        st.subheader("Registered Tests")
+
+        try:
+            c.execute("SELECT * FROM test_registry ORDER BY date_created DESC")
+            rows = c.fetchall()
+
+            if rows:
+                for row in rows:
+                    st.write(f"📄 ID: {row[0]} | Sender: {row[1]} | Receiver: {row[2]} | Profile: {row[3]} | Date: {row[4]}")
+            else:
+                st.info("No test records found.")
+        except sqlite3.Error as db_error:
+            st.error(f"❌ Failed to fetch test records: {db_error}")
         sender = st.text_input("Sender Device")
         receiver = st.text_input("Receiver Device")
         profile = st.text_input("Profile Name")
