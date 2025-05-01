@@ -336,7 +336,7 @@ elif page == "Preview":
     else:
         st.warning("No files found in upload directory.")
 
-   elif page == "Test Registry":
+elif page == "Test Registry":
     st.title("🧪 Test Registry")
     st.markdown("""
     📘 **Purpose:**  
@@ -351,8 +351,8 @@ elif page == "Preview":
     - Submitted tests appear in a live, filterable registry
     """)
 
-   conn = get_connection()
-    c = conn.cursor()
+conn = get_connection()
+c = conn.cursor()
 
     st.subheader("Register New Test")
 
